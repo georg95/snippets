@@ -40,8 +40,15 @@ document.body.append(script)
         return grid
     }
 
-    function restartGame() {
+    function sleep(ms) { return new Promise(res=>setTimeout(res, ms)) }
+    async function restartGame() {
+        await sleep(5000)
         Array.from(document.querySelectorAll('p')).find((node) => node.innerText === 'Game over').click()
+        console.log('waiting 0-15 min...')
+        await sleep(1000 * 60 * 15 * Math.random())
+        Array.from(document.querySelectorAll('p')).find((node) => node.innerText.startsWith('New Game')).click()
+        await sleep(5000)
+        window.startBot()
     }
 
     function offlineButton() {
@@ -82,24 +89,34 @@ document.body.append(script)
             .then(res => res.text())
             .then((move) => {
                 if (!['u', 'd', 'r', 'l'].includes(move)) {
-                    setTimeout(restartGame, 5000)
+                    restartGame()
                     throw new Error('no move left')
                 }
                 makeMove(move)
             })
     }
 
-    let randomFactor = 500
+    let randomFactor = 200
     setInterval(() => {
-        randomFactor = 250 + Math.random() * 500
+        randomFactor = Math.random() * 350
     }, 35000)
 
+    let movesMade = 0
     function repeat() {
         if (window.botStopped) {
             console.log('stopped', new Date())
             return
         }
-        nextMove().then(() => setTimeout(repeat, 500 + Math.random() * randomFactor))
+        if (movesMade % 100 === 0) {
+            console.log(movesMade, 'moves')
+        }
+        if (movesMade > 1000) {
+            console.log('reload')
+            window.parent.postMessage('reload', '*')
+            return
+        }
+        movesMade++
+        nextMove().then(() => setTimeout(repeat, 500 + randomFactor))
     }
 
     window.stopBot = () => {
